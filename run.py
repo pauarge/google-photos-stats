@@ -1,6 +1,3 @@
-# Docs to check: https://developers.google.com/drive/v3/web/folder
-#                https://developers.google.com/drive/v2/reference/children/list
-
 import pickle
 import argparse
 
@@ -72,7 +69,7 @@ class Parser(object):
 
     def process_page(self, next_page=None):
         if not self.images_preloaded:
-            results = self.service.files().list(q="mimeType contains 'image'", pageSize=PAGE_SIZE, pageToken=next_page,
+            results = self.service.files().list(q="mimeType contains 'image/'", pageSize=PAGE_SIZE, pageToken=next_page,
                                                 fields="nextPageToken, files(id, name)").execute()
             items = results.get('files', [])
             if not items:
@@ -90,19 +87,21 @@ class Parser(object):
     def process_images(self):
         if not self.cameras_preloaded:
             total = len(self.images)
-            for gId, name in self.images:
-                self.process_image(gId, total)
+            for google_id, name in self.images:
+                self.process_image(google_id, total)
                 # self.futures.append(self.executor.submit(self.process_image, gId, total))
             # concurrent.futures.wait(self.futures)
             self.dump_cameras()
             self.cameras_preloaded = True
 
-    def process_image(self, gId, total):
-        meta = self.service.files().get(fileId=gId, fields="imageMediaMetadata").execute()
-        make = meta.get('imageMediaMetadata').get('cameraMake')
-        model = meta.get('imageMediaMetadata').get('cameraModel')
-        if make and model:
-            self.cameras[make][model] += 1
+    def process_image(self, google_id, total):
+        meta = self.service.files().get(fileId=google_id, fields="imageMediaMetadata").execute()
+        image_media_metadata = meta.get('imageMediaMetadata')
+        if image_media_metadata:
+            make = image_media_metadata.get('cameraMake')
+            model = image_media_metadata.get('cameraModel')
+            if make and model:
+                self.cameras[make][model] += 1
         self.processed_images += 1
         print("Processed {} of {} images".format(self.processed_images, total))
 
