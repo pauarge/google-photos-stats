@@ -20,7 +20,7 @@ flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
 # at ~/.credentials/drive-python-quickstart.json
 SCOPES = 'https://www.googleapis.com/auth/drive.metadata.readonly'
 CLIENT_SECRET_FILE = 'data/client_secret.json'
-APPLICATION_NAME = 'Drive API Python Quickstart'
+APPLICATION_NAME = 'Google Photos Stats'
 PAGE_SIZE = 1000
 
 
