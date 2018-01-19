@@ -37,7 +37,7 @@ def get_credentials():
     credential_dir = os.path.join(home_dir, '.credentials')
     if not os.path.exists(credential_dir):
         os.makedirs(credential_dir)
-    credential_path = os.path.join(credential_dir, 'drive-python-quickstart.json')
+    credential_path = os.path.join(credential_dir, 'google-photos-stats.json')
 
     store = Storage(credential_path)
     credentials = store.get()
@@ -153,11 +153,6 @@ def generate_graphic(cameras):
 
 
 def main():
-    """Shows basic usage of the Google Drive API.
-
-    Creates a Google Drive API service object and outputs the names and IDs
-    for up to 10 files.
-    """
     parser = Parser()
     parser.process_page()
     parser.dump_images()
