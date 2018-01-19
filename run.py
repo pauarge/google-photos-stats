@@ -8,6 +8,7 @@ import httplib2
 import os
 
 import matplotlib.pyplot as plt
+import flatten_dict
 
 from collections import defaultdict
 
@@ -15,7 +16,6 @@ from apiclient import discovery
 from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
-from flatten_dict import flatten
 
 flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
 
@@ -59,8 +59,9 @@ class Parser(object):
         self.service = discovery.build('drive', 'v3', http=http)
 
         # List of tuples (Google ID, filename)
+        self.images_preloaded = False
+        self.cameras_preloaded = False
         self.images = self.load_images()
-        # Dictionary dictionaries {Make: {Camera: #photos}}
         self.cameras = self.load_cameras()
         self.items_listed = 0
         self.processed_images = 0
@@ -70,7 +71,7 @@ class Parser(object):
         # self.futures = []
 
     def process_page(self, next_page=None):
-        if len(self.images) == 0:
+        if not self.images_preloaded:
             results = self.service.files().list(q="mimeType contains 'image'", pageSize=PAGE_SIZE, pageToken=next_page,
                                                 fields="nextPageToken, files(id, name)").execute()
             items = results.get('files', [])
@@ -83,15 +84,18 @@ class Parser(object):
                 print("Processed {} items".format(self.items_listed))
                 if results.get('nextPageToken'):
                     self.process_page(results.get('nextPageToken'))
+                else:
+                    self.images_preloaded = True
 
     def process_images(self):
-        if len(self.cameras) == 0:
+        if not self.cameras_preloaded:
             total = len(self.images)
             for gId, name in self.images:
                 self.process_image(gId, total)
                 # self.futures.append(self.executor.submit(self.process_image, gId, total))
             # concurrent.futures.wait(self.futures)
             self.dump_cameras()
+            self.cameras_preloaded = True
 
     def process_image(self, gId, total):
         meta = self.service.files().get(fileId=gId, fields="imageMediaMetadata").execute()
@@ -105,6 +109,7 @@ class Parser(object):
     def load_images(self):
         if os.path.exists('data/images.pckl'):
             with open('data/images.pckl', 'rb') as f:
+                self.images_preloaded = True
                 return pickle.load(f)
         else:
             return []
@@ -112,6 +117,7 @@ class Parser(object):
     def load_cameras(self):
         if os.path.exists('data/cameras.pckl'):
             with open('data/cameras.pckl', 'rb') as f:
+                self.cameras_preloaded = True
                 return pickle.load(f)
         else:
             return defaultdict(lambda: defaultdict(int))
@@ -136,7 +142,7 @@ def space_reducer(k1, k2):
 
 
 def generate_graphic(cameras):
-    cameras_flattened = flatten(cameras, reducer=space_reducer)
+    cameras_flattened = flatten_dict.flatten(cameras, reducer=space_reducer)
     print(cameras_flattened)
 
     fig = plt.figure()
